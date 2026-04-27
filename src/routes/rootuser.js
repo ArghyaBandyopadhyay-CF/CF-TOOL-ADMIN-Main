@@ -13,7 +13,8 @@ import Edit_SEO_form from './components/SEO_form/Edit_SEO_form'
 import Admins from './components/Admin/Admins'
 import SampleRisk from './components/Risks/SampleRisk';
 import RootBulkRisk from './components/Risks/RootBulkRisk';
-import TrustCentreAdmin from './components/TrustCentre/TrustCentreAdmin';  // ← ADD
+import TrustCentreAdmin from './components/TrustCentre/TrustCentreAdmin'; 
+import ControlOwnershipAdmin from "./components/ControlOwnership/ControlOwnershipAdmin";
 
 export default {
   items: [
@@ -58,6 +59,15 @@ export default {
       component: TrustCentreAdmin,
       roles: ['root']
     },
+
+    {
+  path: '/control-ownership',
+  name: 'Control Ownership',
+  type: 'link',
+  icon: ManageAccountsIcon,
+  component: ControlOwnershipAdmin,
+  roles: ['root']          // only root can assign control owners
+},
 
     {
       path: '/seo_form',

@@ -18,6 +18,7 @@ import RiskList from "./components/Risks/RiskList";
 import RiskForm from "./components/Risks/RiskForm";
 import Organization from "./components/Organization/Organization";
 import ChangePassword from "./components/Users/ChangePassword";
+import ControlOwnershipAdmin from "./components/ControlOwnership/ControlOwnershipAdmin";
 
 function App() {
   return (
@@ -51,6 +52,7 @@ function App() {
             path="/departments/edit/:id"
             component={DepartmentForm}
           />
+          <PrivateRoute exact path="/control-ownership" component={ControlOwnershipAdmin} />
 
           <PrivateRoute exact path="/risks" component={RiskList} />
           <PrivateRoute exact path="/risks/create" component={RiskForm} />

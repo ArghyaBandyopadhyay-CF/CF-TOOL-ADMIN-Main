@@ -51,6 +51,9 @@ import BlogCat from './components/Blogs/BlogCat';
 import TrustCentreAdmin from './components/TrustCentre/TrustCentreAdmin';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 
+import ControlOwnershipAdmin from './components/ControlOwnership/ControlOwnerAdmin';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+
 export default {
   items: [
     {
@@ -326,6 +329,15 @@ export default {
   icon: VerifiedUserIcon,
   component: TrustCentreAdmin,
   roles: ['root']         // only root (client admin) can manage it
+},
+
+{
+  path: '/control-ownership',
+  name: 'Control Ownership',
+  type: 'link',
+  icon: ManageAccountsIcon,
+  component: ControlOwnershipAdmin,
+  roles: ['root']          // only root can assign control owners
 },
     {
       path: '/users',
