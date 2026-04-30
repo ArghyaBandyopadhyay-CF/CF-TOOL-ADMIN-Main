@@ -1,6 +1,12 @@
-// Trust Centre API — points to local trust-centre service on port 4021
-const BASE = `${process.env.REACT_APP_TRUST_CENTRE_URL}/api/trust-centre`;
-const PREVIEW = `${process.env.REACT_APP_TRUST_CENTRE_URL}/api/preview`;
+
+
+const TC_URL = process.env.REACT_APP_TRUST_CENTRE_URL || "http://localhost:4021";
+
+const BASE      = `${TC_URL}/api/trust-centre`;
+const PREVIEW   = `${TC_URL}/api/preview`;
+const AR_BASE   = `${TC_URL}/api/access-requests`;
+const TEAM_BASE = `${TC_URL}/api/team-access`;
+
 
 const getToken = () => localStorage.getItem("token");
 
@@ -132,3 +138,84 @@ export const removeCustomDomain = () =>
 
 export const getInternalPreview = () =>
   fetch(`${PREVIEW}/internal`, { headers: authHeaders() }).then((r) => r.json());
+
+// ── Share Link ────────────────────────────────────────────────────────────────
+
+/**
+ * Enable or disable the public shareable link.
+ * Trust Centre must be PUBLISHED first.
+ * Body: { enabled: true | false }
+ * Returns: { shareEnabled, shareToken }
+ */
+export const toggleShare = (enabled) =>
+  fetch(`${BASE}/share/toggle`, {
+    method: "POST",
+    headers: { ...authHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify({ enabled }),
+  }).then((r) => r.json());
+
+/**
+ * Invalidate the current share token and issue a new one.
+ * All previously shared URLs will stop working immediately.
+ * Returns: { shareToken, shareEnabled }
+ */
+export const regenerateShareToken = () =>
+  fetch(`${BASE}/share/regenerate`, {
+    method: "POST",
+    headers: authHeaders(),
+  }).then((r) => r.json());
+
+// ── Access Requests ───────────────────────────────────────────────────────────
+
+/**
+ * List access requests for the admin's org.
+ * @param {string} [status] — optional filter: "PENDING" | "APPROVED" | "REJECTED"
+ * Returns: AccessRequest[]
+ */
+export const listAccessRequests = (status) => {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return fetch(`${AR_BASE}${query}`, {
+    headers: authHeaders(),
+  }).then((r) => r.json());
+};
+
+/**
+ * Fetch a single access request by ID.
+ * Returns: AccessRequest
+ */
+export const getAccessRequest = (id) =>
+  fetch(`${AR_BASE}/${id}`, {
+    headers: authHeaders(),
+  }).then((r) => r.json());
+
+/**
+ * Approve a pending access request.
+ * Creates a TeamAccess record for the requester.
+ * Returns: AccessRequest (status = APPROVED)
+ */
+export const approveAccessRequest = (id) =>
+  fetch(`${AR_BASE}/${id}/approve`, {
+    method: "POST",
+    headers: authHeaders(),
+  }).then((r) => r.json());
+
+/**
+ * Reject a pending access request.
+ * Returns: AccessRequest (status = REJECTED)
+ */
+export const rejectAccessRequest = (id) =>
+  fetch(`${AR_BASE}/${id}/reject`, {
+    method: "POST",
+    headers: authHeaders(),
+  }).then((r) => r.json());
+
+// ── Team Access ───────────────────────────────────────────────────────────────
+
+/**
+ * List all approved users / companies for the admin's org Trust Centre.
+ * Returns: TeamAccess[]
+ */
+export const getTeamAccess = () =>
+  fetch(TEAM_BASE, {
+    headers: authHeaders(),
+  }).then((r) => r.json());
