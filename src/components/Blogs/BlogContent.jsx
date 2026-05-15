@@ -19,7 +19,8 @@ import {
   IconButton,
   CircularProgress,
   Tooltip,
-  Fade
+  Fade,
+  TablePagination
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -30,14 +31,31 @@ export default function BlogContent() {
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+
   const API_BASE = "https://api.calvant.com/blog-service/api/blogs";
 
   const fetchBlogs = async () => {
     try {
       setLoading(true);
-      const res = await fetch(API_BASE);
+      const res = await fetch(`${API_BASE}?page=${page + 1}&limit=${rowsPerPage}`);
       const responseData = await res.json();
-      setBlogs(responseData.data || responseData || []);
+      
+      if (responseData && Array.isArray(responseData.data)) {
+        setBlogs(responseData.data);
+        // Robustly catch the total count from various common field names
+        setTotalItems(responseData.totalItems || responseData.total_items || responseData.totalElements || responseData.total_elements || responseData.data.length);
+      } else if (Array.isArray(responseData)) {
+        setBlogs(responseData);
+        setTotalItems(responseData.length);
+      } else {
+        setBlogs([]);
+        setTotalItems(0);
+        console.warn("API returned unexpected format:", responseData);
+      }
     } catch (error) {
       console.error("Failed to fetch blogs:", error);
     } finally {
@@ -47,7 +65,16 @@ export default function BlogContent() {
 
   useEffect(() => {
     fetchBlogs();
-  }, []);
+  }, [page, rowsPerPage]);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to permanently delete this blog post?")) return;
@@ -64,11 +91,11 @@ export default function BlogContent() {
 
   return (
     <Box sx={{ p: 4, width: '100%', maxWidth: '1200px', margin: '0 auto', fontFamily: "'Inter', sans-serif" }}>
-      
+
       {/* 🚀 Sleek Top Header & Action */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
+      <Box sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
         mb: 4,
         p: 3,
@@ -80,15 +107,15 @@ export default function BlogContent() {
           Blog Content Manager
         </Typography>
 
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           startIcon={<PostAddIcon />}
           onClick={() => navigate('/blogs/content/add')}
-          sx={{ 
-            borderRadius: '24px', 
-            textTransform: 'none', 
-            fontWeight: 700, 
-            px: 4, 
+          sx={{
+            borderRadius: '24px',
+            textTransform: 'none',
+            fontWeight: 700,
+            px: 4,
             py: 1.5,
             boxShadow: '0 8px 16px rgba(25, 118, 210, 0.24)',
             transition: 'all 0.3s ease',
@@ -99,13 +126,36 @@ export default function BlogContent() {
         </Button>
       </Box>
 
+      {/* 🚀 Top Pagination for better visibility */}
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 100]}
+          component="div"
+          count={totalItems}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          sx={{
+            border: '1px solid rgba(0,0,0,0.08)',
+            borderRadius: 4,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+              fontWeight: 600,
+              color: '#475569'
+            }
+          }}
+        />
+      </Box>
+
       {/* 📊 Premium Transparent Table */}
-      <TableContainer 
-        component={Paper} 
+      <TableContainer
+        component={Paper}
         elevation={0}
-        sx={{ 
-          borderRadius: 4, 
-          overflow: 'hidden', 
+        sx={{
+          borderRadius: 4,
+          overflow: 'hidden',
           border: '1px solid rgba(0,0,0,0.08)',
           backgroundColor: 'rgba(255, 255, 255, 0.8)',
           backdropFilter: 'blur(20px)'
@@ -121,7 +171,7 @@ export default function BlogContent() {
               <TableCell align="right" sx={{ fontWeight: 'bold', color: '#455a64' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
-          
+
           <TableBody>
             {loading ? (
               <TableRow>
@@ -132,7 +182,7 @@ export default function BlogContent() {
                   </Typography>
                 </TableCell>
               </TableRow>
-            ) : blogs.length === 0 ? (
+            ) : (!blogs || !Array.isArray(blogs) || blogs.length === 0) ? (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
                   <Typography variant="h6" color="text.secondary" fontWeight="light">
@@ -142,12 +192,12 @@ export default function BlogContent() {
               </TableRow>
             ) : (
               blogs.map((blog) => (
-                <TableRow 
-                  key={blog.id} 
-                  hover 
-                  sx={{ 
-                    transition: '0.2s ease', 
-                    '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.04)' } 
+                <TableRow
+                  key={blog.id}
+                  hover
+                  sx={{
+                    transition: '0.2s ease',
+                    '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.04)' }
                   }}
                 >
                   <TableCell>
@@ -156,10 +206,10 @@ export default function BlogContent() {
                         component="img"
                         src={blog.image.url}
                         alt="cover"
-                        sx={{ 
-                          width: 80, 
-                          height: 50, 
-                          objectFit: 'cover', 
+                        sx={{
+                          width: 80,
+                          height: 50,
+                          objectFit: 'cover',
                           borderRadius: 1,
                           boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                         }}
@@ -184,8 +234,8 @@ export default function BlogContent() {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" sx={{ 
-                      color: blog.status === 'published' ? '#166534' : '#94a3b8', 
+                    <Typography variant="body2" sx={{
+                      color: blog.status === 'published' ? '#166534' : '#94a3b8',
                       fontWeight: 600,
                       textTransform: 'capitalize'
                     }}>
@@ -194,7 +244,7 @@ export default function BlogContent() {
                   </TableCell>
                   <TableCell align="right">
                     <Tooltip title="Edit Post" TransitionComponent={Fade}>
-                      <IconButton 
+                      <IconButton
                         onClick={() => navigate(`/blogs/content/edit/${blog.slugUrl || blog.slug || blog.id}`)}
                         sx={{ color: '#1976d2', '&:hover': { backgroundColor: 'rgba(25, 118, 210, 0.1)' }, mr: 1 }}
                       >
@@ -202,7 +252,7 @@ export default function BlogContent() {
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Delete Permanently" TransitionComponent={Fade}>
-                      <IconButton 
+                      <IconButton
                         onClick={() => handleDelete(blog.id)}
                         sx={{ color: '#ef4444', '&:hover': { backgroundColor: 'rgba(239, 68, 68, 0.1)' } }}
                       >
@@ -216,6 +266,27 @@ export default function BlogContent() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25, 100]}
+        component="div"
+        count={totalItems}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        sx={{
+          mt: 2,
+          border: '1px solid rgba(0,0,0,0.08)',
+          borderRadius: 4,
+          backgroundColor: 'rgba(25, 118, 210, 0.08)', // Tinted to make it stand out
+          backdropFilter: 'blur(20px)',
+          '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+            fontWeight: 700,
+            color: '#1e293b'
+          }
+        }}
+      />
     </Box>
   );
 }

@@ -1,7 +1,7 @@
 // src/api/controlOwnershipApi.js
 // Base URL points to control-ownership-service on port 4025
 
-const BASE_URL = process.env.REACT_APP_CONTROL_OWNERSHIP_URL || "https://api.calvant.com/controlownership";
+const BASE_URL = "https://api.calvant.com/control-ownership-service";
 
 const getHeaders = () => {
   const token = localStorage.getItem("token");

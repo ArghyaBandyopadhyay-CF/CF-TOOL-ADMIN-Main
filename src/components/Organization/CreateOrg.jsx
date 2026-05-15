@@ -23,28 +23,30 @@ import {
   ListItemText,
   Checkbox,
 } from "@mui/material";
-import BusinessIcon   from "@mui/icons-material/Business";
-import SaveIcon       from "@mui/icons-material/Save";
-import SecurityIcon   from "@mui/icons-material/Security";
-import ShieldIcon     from "@mui/icons-material/Shield";
+import BusinessIcon from "@mui/icons-material/Business";
+import SaveIcon from "@mui/icons-material/Save";
+import SecurityIcon from "@mui/icons-material/Security";
+import ShieldIcon from "@mui/icons-material/Shield";
+import PeopleIcon from "@mui/icons-material/People"; // ✅ Added Icon for Max Users
 
 // ✅ Must stay in sync with OrganizationController.ALLOWED_FRAMEWORKS
 const FRAMEWORK_OPTIONS = [
   { value: "ISO27001", label: "ISO 27001 — Information Security" },
   { value: "ISO27701", label: "ISO 27701 — Privacy Information" },
-  { value: "SOC2",     label: "SOC 2 — Service Organization Controls" },
+  { value: "SOC2", label: "SOC 2 — Service Organization Controls" },
   { value: "ISO42001", label: "ISO 42001 — AI Management System" },
-  { value: "GDPR",     label: "GDPR — General Data Protection Regulation" },
-  { value: "KSA_PDPL",     label: "KSA PDPL — Personal Data Protection Law" },
-  { value: "DPDPR",     label: "DPDPR - Digital Personal Data Protection Rules" },
+  { value: "GDPR", label: "GDPR — General Data Protection Regulation" },
+  { value: "KSA_PDPL", label: "KSA PDPL — Personal Data Protection Law" },
+  { value: "DPDPR", label: "DPDPR - Digital Personal Data Protection Rules" },
 ];
 
 function CreateOrg() {
-  const [name,         setName]         = useState("");
-  const [frameworks,   setFrameworks]   = useState([]);
-  const [tprmEnabled,  setTprmEnabled]  = useState("false");
-  const [loading,      setLoading]      = useState(false);
-  const [error,        setError]        = useState("");
+  const [name, setName] = useState("");
+  const [frameworks, setFrameworks] = useState([]);
+  const [tprmEnabled, setTprmEnabled] = useState("false");
+  const [maxUsers, setMaxUsers] = useState(""); // ✅ Added Max Users state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const navigate = useNavigate();
 
@@ -57,21 +59,25 @@ function CreateOrg() {
     e.preventDefault();
     setError("");
 
-    if (!name.trim())
-      return setError("Organization name is required");
+    if (!name.trim()) return setError("Organization name is required");
     if (frameworks.length === 0)
       return setError("Please select at least one compliance framework");
 
     setLoading(true);
     try {
       await api.post("/organizations", {
-        name:        name.trim(),
+        name: name.trim(),
         frameworks,
-        tprmEnabled: tprmEnabled === "true",   // ✅ cast to boolean for backend
+        tprmEnabled: tprmEnabled === "true", // ✅ cast to boolean for backend
+        maxUsers: maxUsers ? parseInt(maxUsers, 10) : null, // ✅ format MaxUsers for DB safely
       });
       navigate("/organizations/list");
     } catch (err) {
-      setError(err.response?.data?.error || err.response?.data || "Failed to create organization");
+      setError(
+        err.response?.data?.error ||
+          err.response?.data ||
+          "Failed to create organization"
+      );
       setLoading(false);
     }
   };
@@ -79,7 +85,6 @@ function CreateOrg() {
   return (
     <Container maxWidth="md" sx={{ mt: 5, mb: 5 }}>
       <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
-
         {error && (
           <Alert severity="error" sx={{ mb: 3 }}>
             {error}
@@ -87,7 +92,6 @@ function CreateOrg() {
         )}
 
         <form onSubmit={handleSubmit}>
-
           {/* ── Organization Name ──────────────────────────────── */}
           <Box sx={{ display: "flex", alignItems: "flex-end", gap: 2, mb: 4 }}>
             <BusinessIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />
@@ -101,6 +105,25 @@ function CreateOrg() {
               disabled={loading}
               autoFocus
               helperText="This name will be used for billing and reports."
+            />
+          </Box>
+
+          <Divider sx={{ my: 3 }} />
+
+          {/* ── Max Users (Quota) ──────────────────────────────── */}
+          <Box sx={{ display: "flex", alignItems: "flex-end", gap: 2, mb: 4 }}>
+            <PeopleIcon sx={{ color: "action.active", mr: 1, my: 0.5 }} />
+            <TextField
+              fullWidth
+              label="Maximum Users Limit"
+              variant="standard"
+              type="number"
+              inputProps={{ min: 1 }}
+              value={maxUsers}
+              onChange={(e) => setMaxUsers(e.target.value)}
+              placeholder="e.g. 50 (Leave blank for no limit)"
+              disabled={loading}
+              helperText="Set a hard limit on how many users this organization can register."
             />
           </Box>
 
@@ -153,11 +176,15 @@ function CreateOrg() {
           <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2, mb: 4 }}>
             <ShieldIcon sx={{ color: "action.active", mt: 0.5, flexShrink: 0 }} />
             <Box>
-              <FormLabel component="legend" sx={{ fontWeight: 500, color: "text.primary", mb: 0.5 }}>
+              <FormLabel
+                component="legend"
+                sx={{ fontWeight: 500, color: "text.primary", mb: 0.5 }}
+              >
                 Enable TPRM (Third-Party Risk Management)
               </FormLabel>
               <Box sx={{ color: "text.secondary", fontSize: 13, mb: 1 }}>
-                Enables vendor risk assessments and third-party monitoring for this organization.
+                Enables vendor risk assessments and third-party monitoring for
+                this organization.
               </Box>
               <RadioGroup
                 row
@@ -200,7 +227,6 @@ function CreateOrg() {
               {loading ? "Creating..." : "Create Organisation"}
             </Button>
           </Box>
-
         </form>
       </Paper>
     </Container>

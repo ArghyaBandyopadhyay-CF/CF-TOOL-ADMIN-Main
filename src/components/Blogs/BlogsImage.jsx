@@ -18,7 +18,8 @@ import {
   IconButton,
   CircularProgress,
   Tooltip,
-  Fade
+  Fade,
+  TablePagination
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -34,6 +35,11 @@ export default function BlogsImage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
+  // Pagination states
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+
   // ⚠️ Base API URL for your backend server
   const API_BASE = "https://api.calvant.com/blog-service/api/blog-images"; 
 
@@ -41,9 +47,22 @@ export default function BlogsImage() {
   const fetchImages = async () => {
     try {
       setLoading(true);
-      const res = await fetch(API_BASE);
+      const res = await fetch(`${API_BASE}?page=${page + 1}&limit=${rowsPerPage}`);
       const result = await res.json();
-      setImages(result.data || []);
+      
+      // Handle the new paginated API response
+      if (result && Array.isArray(result.data)) {
+        setImages(result.data);
+        // Robustly catch the total count from various common field names
+        setTotalItems(result.totalItems || result.total_items || result.totalElements || result.total_elements || result.data.length);
+      } else if (Array.isArray(result)) {
+        setImages(result);
+        setTotalItems(result.length);
+      } else {
+        setImages([]);
+        setTotalItems(0);
+        console.warn("API returned unexpected format:", result);
+      }
     } catch (error) {
       console.error("Failed to fetch images:", error);
     } finally {
@@ -53,7 +72,16 @@ export default function BlogsImage() {
 
   useEffect(() => {
     fetchImages();
-  }, []);
+  }, [page, rowsPerPage]);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   // --- Handle Upload ---
   const handleUploadSubmit = async () => {
@@ -148,6 +176,29 @@ export default function BlogsImage() {
         </Button>
       </Box>
 
+      {/* 🚀 Top Pagination for better visibility */}
+      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
+        <TablePagination
+          rowsPerPageOptions={[5, 10, 25, 100]}
+          component="div"
+          count={totalItems}
+          rowsPerPage={rowsPerPage}
+          page={page}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          sx={{
+            border: '1px solid rgba(0,0,0,0.08)',
+            borderRadius: 4,
+            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+              fontWeight: 600,
+              color: '#475569'
+            }
+          }}
+        />
+      </Box>
+
       {/* 📊 Premium Transparent Table */}
       <TableContainer 
         component={Paper} 
@@ -181,7 +232,7 @@ export default function BlogsImage() {
                   </Typography>
                 </TableCell>
               </TableRow>
-            ) : images.length === 0 ? (
+            ) : (!images || !Array.isArray(images) || images.length === 0) ? (
               <TableRow>
                 <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
                   <Typography variant="h6" color="text.secondary" fontWeight="light">
@@ -264,6 +315,28 @@ export default function BlogsImage() {
           </TableBody>
         </Table>
       </TableContainer>
+
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25, 100]}
+        component="div"
+        count={totalItems}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        sx={{
+          mt: 2,
+          mb: 4,
+          border: '1px solid rgba(0,0,0,0.08)',
+          borderRadius: 4,
+          backgroundColor: 'rgba(25, 118, 210, 0.08)', // Tinted to make it stand out
+          backdropFilter: 'blur(20px)',
+          '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+            fontWeight: 700,
+            color: '#1e293b'
+          }
+        }}
+      />
 
       {/* 💻 Upload Dialog Framework */}
       <Dialog 

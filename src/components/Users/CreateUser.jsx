@@ -92,6 +92,8 @@ export default function UserForm({ userToEdit = null, onSuccess }) {
 
   // ── Derived booleans ──────────────────────────────────────────────────────
   const isUserRole = formData.role.includes("user");
+  const isSteeringRole = formData.role.includes("steering_committee_member"); // ✅ Added Support
+  
   const isTprmSelected = formData.modules.includes("tprm");
   const isDeptSelected = formData.department.length > 0;
   // Check if any of the special roles (dpo, ciso, aio) are selected
@@ -99,16 +101,16 @@ export default function UserForm({ userToEdit = null, onSuccess }) {
   
   // Show department when:
   // 1. Special roles are selected (dpo, ciso, aio), OR
-  // 2. User role is selected but tprm is NOT selected, OR
-  // 3. Non-user roles are selected (but not special roles when they're the only selection)
+  // 2. User or Steering role is selected but tprm is NOT selected, OR
+  // 3. Non-user/non-steering roles are selected (but not special roles when they're the only selection)
   const showDepartment = loggedInRole === "root" && (
     hasSpecialRole || 
-    !isUserRole || 
-    (isUserRole && !isTprmSelected)
+    !(isUserRole || isSteeringRole) || 
+    ((isUserRole || isSteeringRole) && !isTprmSelected)
   );
   
-  // Show vendors dropdown only when user role AND tprm module is selected
-  const showVendors = loggedInRole === "root" && isUserRole && isTprmSelected;
+  // Show vendors dropdown only when user/steering role AND tprm module is selected
+  const showVendors = loggedInRole === "root" && (isUserRole || isSteeringRole) && isTprmSelected;
   
   // isAuditor auto-derived from role — not shown in UI
   const isAuditorAuto =
@@ -226,8 +228,8 @@ export default function UserForm({ userToEdit = null, onSuccess }) {
           }
         }
         
-        // Clear modules & vendors if no longer "user" role, but preserve department
-        if (!finalNewValue.includes("user")) {
+        // Clear modules & vendors if no longer "user" or "steering_committee_member" role
+        if (!finalNewValue.includes("user") && !finalNewValue.includes("steering_committee_member")) {
           return { ...prev, [name]: finalNewValue, modules: [], vendors: [] };
         }
       }
@@ -252,7 +254,7 @@ export default function UserForm({ userToEdit = null, onSuccess }) {
         ...prev,
         [fieldName]: prev[fieldName].filter((v) => v !== valueToRemove),
       };
-      if (fieldName === "role" && valueToRemove === "user") {
+      if (fieldName === "role" && (valueToRemove === "user" || valueToRemove === "steering_committee_member")) {
         updated.modules = [];
         updated.vendors = [];
       }
@@ -278,7 +280,7 @@ export default function UserForm({ userToEdit = null, onSuccess }) {
         role: rolesArr,
         department:
           loggedInRole === "super_admin"
-            ? []
+            ? []  
             : isTprmSelected
               ? []  // Send empty array when TPRM is selected
               : normalizeArray(formData.department),
@@ -290,8 +292,8 @@ export default function UserForm({ userToEdit = null, onSuccess }) {
               : userOrg,
         // Auto-derive isAuditor from role — not user-input
         isAuditor: rolesArr.includes("auditor") || rolesArr.includes("audit_manager"),
-        // Only send modules for "user" role
-        modules: rolesArr.includes("user") ? normalizeArray(formData.modules) : [],
+        // Only send modules for "user" or "steering_committee_member" role
+        modules: (rolesArr.includes("user") || rolesArr.includes("steering_committee_member")) ? normalizeArray(formData.modules) : [],
         // Vendors only when tprm module selected
         vendors: isTprmSelected ? vendorsArr : [],
       };
@@ -390,8 +392,8 @@ export default function UserForm({ userToEdit = null, onSuccess }) {
               </Select>
             </FormControl>
 
-            {/* Modules — only for role=user (root only), shown BEFORE department */}
-            {loggedInRole === "root" && isUserRole && (
+            {/* Modules — only for role=user or steering_committee_member (root only), shown BEFORE department */}
+            {loggedInRole === "root" && (isUserRole || isSteeringRole) && (
               <FormControl fullWidth>
                 <InputLabel>Modules</InputLabel>
                 <Select

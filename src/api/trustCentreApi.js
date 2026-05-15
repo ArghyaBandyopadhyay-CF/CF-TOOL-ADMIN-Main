@@ -1,6 +1,6 @@
 
 
-const TC_URL = process.env.REACT_APP_TRUST_CENTRE_URL || "http://localhost:4021";
+const TC_URL = process.env.REACT_APP_TRUST_CENTRE_URL || "https://api.calvant.com/trust-service";
 
 const BASE      = `${TC_URL}/api/trust-centre`;
 const PREVIEW   = `${TC_URL}/api/preview`;
